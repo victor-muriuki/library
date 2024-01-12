@@ -61,6 +61,7 @@ def list_borrowed_books(session):
 
 
 
+
 def borrow_book(session, user_id, book_id):
     try:
         borrowed_book = BorrowedBook(user_id=user_id, book_id=book_id)

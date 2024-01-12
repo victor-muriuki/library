@@ -11,12 +11,14 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
+    borrowed_books = relationship("BorrowedBook", back_populates="user")
 
 class Book(Base):
     __tablename__ = 'books'
 
     id = Column(Integer, primary_key=True)
     title = Column(String, nullable=False)
+    borrowed_books = relationship("BorrowedBook", back_populates="book")
 
 class BorrowedBook(Base):
     __tablename__ = 'borrowed_books'
@@ -25,8 +27,10 @@ class BorrowedBook(Base):
     user_id = Column(Integer, ForeignKey('users.id'))
     book_id = Column(Integer, ForeignKey('books.id'))
 
-    user = relationship('User', back_populates='borrowed_books')
-    book = relationship('Book', back_populates='borrowed_books')
+    # Define relationships
+    user = relationship("User", back_populates="borrowed_books")
+    book = relationship("Book", back_populates="borrowed_books")
+
 
 User.borrowed_books = relationship('BorrowedBook', back_populates='user')
 Book.borrowed_books = relationship('BorrowedBook', back_populates='book')
