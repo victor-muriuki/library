@@ -33,6 +33,8 @@ def add_user(user_name):
 @cli.command()
 @click.argument('book_id', type=int)
 @click.argument('user_id', type=int)
+
+
 def borrow_book(book_id, user_id):
     db = SessionLocal()
     book = db.query(Book).filter_by(id=book_id).first()
@@ -53,6 +55,9 @@ def borrow_book(book_id, user_id):
 
 @cli.command()
 @click.argument('book_id', type=int)
+
+
+
 def return_book(book_id):
     db = SessionLocal()
     borrowed_book = db.query(BorrowedBook).filter_by(book_id=book_id, return_date=None).first()

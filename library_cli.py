@@ -8,6 +8,9 @@ from library.models import User, Book, BorrowedBook, Base
 def create_database():
     engine = create_engine('sqlite:///library.db')
     Base.metadata.create_all(engine)
+    alembic_cfg = Config("alembic.ini")  
+    # Assuming you have an Alembic configuration file
+    command.stamp(alembic_cfg, "head")
     return engine
 
 def add_user(session, name):

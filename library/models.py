@@ -1,8 +1,8 @@
 # models.py
 
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
@@ -22,10 +22,10 @@ class Book(Base):
 
 class BorrowedBook(Base):
     __tablename__ = 'borrowed_books'
-
+    # Add columns
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'))
-    book_id = Column(Integer, ForeignKey('books.id'))
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    book_id = Column(Integer, ForeignKey('books.id'), nullable=False)
 
     # Define relationships
     user = relationship("User", back_populates="borrowed_books")
