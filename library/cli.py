@@ -1,10 +1,16 @@
-# library/cli.py
-
 import click
 from library.models import Book, BorrowedBook, User
 from library.database import SessionLocal, init_db
 
 init_db()
+
+def bubble_sort_books(books):
+    n = len(books)
+    for i in range(n - 1):
+        for j in range(0, n - i - 1):
+            if books[j].title > books[j + 1].title:
+                # Swap if the element found is greater
+                books[j], books[j + 1] = books[j + 1], books[j]
 
 @click.group()
 def cli():
@@ -12,60 +18,36 @@ def cli():
 
 @cli.command()
 @click.argument('title')
-@click.argument('author')
-@click.argument('total_copies', type=int)
-def add_book(title, author, total_copies):
-    book = Book(title=title, author=author, total_copies=total_copies, available_copies=total_copies)
-    db = SessionLocal()
-    db.add(book)
-    db.commit()
+def add_book(title):
+    book = Book(title=title, available_copies=1)  # Assuming 1 copy for simplicity
+    with SessionLocal() as db:
+        db.add(book)
+        db.commit()
     click.echo(f"Book '{title}' added successfully.")
 
 @cli.command()
-@click.argument('user_name')
-def add_user(user_name):
-    user = User(name=user_name)
-    db = SessionLocal()
-    db.add(user)
-    db.commit()
-    click.echo(f"User '{user_name}' added successfully.")
+def list_books():
+    with SessionLocal() as db:
+        # Use order_by to sort books by title
+        books = db.query(Book).order_by(Book.title).all()
+
+        if books:
+            click.echo("List of Books:")
+            for book in books:
+                click.echo(f"Book ID: {book.id}, Title: {book.title}, Copies: {book.available_copies}")
+        else:
+            click.echo("No books found.")
 
 @cli.command()
-@click.argument('book_id', type=int)
-@click.argument('user_id', type=int)
+def list_users():
+    with SessionLocal() as db:
+        users = db.query(User).all()
+        if users:
+            click.echo("List of Users:")
+            for user in users:
+                click.echo(f"User ID: {user.id}, Name: {user.name}")
+        else:
+            click.echo("No users found.")
 
-
-def borrow_book(book_id, user_id):
-    db = SessionLocal()
-    book = db.query(Book).filter_by(id=book_id).first()
-    user = db.query(User).filter_by(id=user_id).first()
-
-    if book and user and book.available_copies > 0:
-        borrowed_book = BorrowedBook(book=book, user=user)
-        book.available_copies -= 1
-        db.add(borrowed_book)
-        db.commit()
-        click.echo(f"Book '{book.title}' borrowed by '{user.name}' successfully.")
-    elif not book:
-        click.echo(f"Book with ID {book_id} not found.")
-    elif not user:
-        click.echo(f"User with ID {user_id} not found.")
-    elif book.available_copies <= 0:
-        click.echo(f"All copies of '{book.title}' are currently borrowed.")
-
-@cli.command()
-@click.argument('book_id', type=int)
-
-
-
-def return_book(book_id):
-    db = SessionLocal()
-    borrowed_book = db.query(BorrowedBook).filter_by(book_id=book_id, return_date=None).first()
-
-    if borrowed_book:
-        borrowed_book.return_date = datetime.utcnow()
-        borrowed_book.book.available_copies += 1
-        db.commit()
-        click.echo(f"Book '{borrowed_book.book.title}' returned successfully.")
-    else:
-        click.echo(f"No active borrow record found for Book ID {book_id}.")
+if __name__ == "__main__":
+    cli()

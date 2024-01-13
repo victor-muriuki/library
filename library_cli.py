@@ -1,140 +1,88 @@
-# import click
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.exc import IntegrityError
+import click
+from library.models import Book, BorrowedBook, User
+from library.database import SessionLocal, init_db
 
-from library.models import User, Book, BorrowedBook, Base
+init_db()
 
-def create_database():
-    engine = create_engine('sqlite:///library.db')
-    Base.metadata.create_all(engine)
-    alembic_cfg = Config("alembic.ini")  
-    # Assuming you have an Alembic configuration file
-    command.stamp(alembic_cfg, "head")
-    return engine
+def sort_items(items, key_function):
+    return sorted(items, key=key_function)
 
-def add_user(session, name):
-    try:
-        user = User(name=name)
-        session.add(user)
-        session.commit()
-        print("User added successfully.")
-    except IntegrityError:
-        session.rollback()
-        print("Error: User with the same name already exists.")
+def sort_books(books):
+    return sort_items(books, key=lambda book: book.title)
 
-def add_book(session, title):
-    try:
-        book = Book(title=title)
-        session.add(book)
-        session.commit()
-        print("Book added successfully.")
-    except IntegrityError:
-        session.rollback()
-        print("Error: Book with the same title already exists.")
+def sort_users(users):
+    return sort_items(users, key=lambda user: user.name)
 
-def list_users(session):
-    users = session.query(User).all()
-    if users:
-        for user in users:
-            print(f"User ID: {user.id}, Name: {user.name}")
-    else:
-        print("No users found.")
+@click.group()
+def cli():
+    pass
 
-def list_books(session):
-    books = session.query(Book).all()
-    if books:
-        for book in books:
-            print(f"Book ID: {book.id}, Title: {book.title}")
-    else:
-        print("No books found.")
+@cli.command()
+@click.argument('name')
+def add_user(name):
+    """Add a new user to the library."""
+    user = User(name=name)
+    with SessionLocal() as db:
+        db.add(user)
+        db.commit()
+    click.echo(f"User '{name}' added successfully.")
 
-def list_borrowed_books(session):
-    borrowed_books = session.query(BorrowedBook).all()
-    if borrowed_books:
-        for borrowed_book in borrowed_books:
-            user_name = borrowed_book.user.name if borrowed_book.user else "Unknown User"
-            book_title = borrowed_book.book.title if borrowed_book.book else "Unknown Book"
-            print(f"User: {user_name}, Book: {book_title}")
-    else:
-        print("No borrowed books found.")
+@cli.command()
+@click.argument('title')
+def add_book(title):
+    """Add a new book to the library."""
+    book = Book(title=title, available_copies=1)  # Assuming 1 copy for simplicity
+    with SessionLocal() as db:
+        db.add(book)
+        db.commit()
+    click.echo(f"Book '{title}' added successfully.")
 
+@cli.command()
+def list_users():
+    """List all users in the library."""
+    with SessionLocal() as db:
+        users = db.query(User).all()
 
+        # Sort the users alphabetically
+        sorted_users = sort_users(users)
 
+        if sorted_users:
+            click.echo("List of Users:")
+            for user in sorted_users:
+                click.echo(f"User ID: {user.id}, Name: {user.name}")
+        else:
+            click.echo("No users found.")
 
+@cli.command()
+def list_books():
+    """List all books in the library."""
+    with SessionLocal() as db:
+        books = db.query(Book).all()
 
+        # Sort the books alphabetically
+        sorted_books = sort_books(books)
 
+        if sorted_books:
+            click.echo("List of Books:")
+            for book in sorted_books:
+                click.echo(f"Book ID: {book.id}, Title: {book.title}, Copies: {book.available_copies}")
+        else:
+            click.echo("No books found.")
 
-def borrow_book(session, user_id, book_id):
-    try:
-        borrowed_book = BorrowedBook(user_id=user_id, book_id=book_id)
-        session.add(borrowed_book)
-        session.commit()
-        print("Book borrowed successfully.")
-    except IntegrityError:
-        session.rollback()
-        print("Error: User or Book not found, or the book is already borrowed.")
+@cli.command()
+def list_borrowed_books():
+    """List all borrowed books in the library."""
+    with SessionLocal() as db:
+        borrowed_books = db.query(BorrowedBook).all()
 
-def return_book(session, user_id, book_id):
-    borrowed_book = session.query(BorrowedBook).filter_by(user_id=user_id, book_id=book_id).first()
-    if borrowed_book:
-        try:
-            session.delete(borrowed_book)
-            session.commit()
-            print("Book returned successfully.")
-        except IntegrityError:
-            session.rollback()
-            print("Error: Unable to return the book.")
-    else:
-        print("Borrowed book not found.")
+        if borrowed_books:
+            click.echo("List of Borrowed Books:")
+            for borrowed_book in borrowed_books:
+                click.echo(f"Book ID: {borrowed_book.book_id}, User ID: {borrowed_book.user_id}, Due Date: {borrowed_book.due_date}")
+        else:
+            click.echo("No borrowed books found.")
 
-def main():
-    engine = create_database()
-    Base.metadata.bind = engine
-    Session = sessionmaker(bind=engine)
-    session = Session()
-
-    while True:
-        print("\nLibrary CLI Menu:")
-        print("1. Add User")
-        print("2. Add Book")
-        print("3. List Users")
-        print("4. List Books")
-        print("5. List Borrowed Books")
-        print("6. Borrow Book")
-        print("7. Return Book")
-        print("8. Exit")
-
-        choice = input("Enter your choice: ")
-
-        try:
-            if choice == '1':
-                name = input("Enter user name: ")
-                add_user(session, name)
-            elif choice == '2':
-                title = input("Enter book title: ")
-                add_book(session, title)
-            elif choice == '3':
-                list_users(session)
-            elif choice == '4':
-                list_books(session)
-            elif choice == '5':
-                list_borrowed_books(session)
-            elif choice == '6':
-                user_id = input("Enter user ID: ")
-                book_id = input("Enter book ID: ")
-                borrow_book(session, user_id, book_id)
-            elif choice == '7':
-                user_id = input("Enter user ID: ")
-                book_id = input("Enter book ID: ")
-                return_book(session, user_id, book_id)
-            elif choice == '8':
-                print("Exiting. Goodbye!")
-                break
-            else:
-                print("Invalid choice. Please try again.")
-        except Exception as e:
-            print(f"An error occurred: {e}")
+# Additional commands (borrow, return) can be added as needed
 
 if __name__ == "__main__":
-    main()
+    cli()

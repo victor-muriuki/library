@@ -1,4 +1,5 @@
 # models.py
+# from alembic.config import Config
 
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
