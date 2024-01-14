@@ -113,13 +113,13 @@ def list_borrowed_books():
             click.echo("No borrowed books found.")
 
 
-# Additional commands (borrow, return) can be added as needed
+
 def return_book(session, user_id, book_id):
     borrowed_book = session.query(BorrowedBook).filter_by(user_id=user_id, book_id=book_id).first()
     if borrowed_book:
         try:
             session.delete(borrowed_book)
-            # No need to increment available copies since it's removed from the model
+            
             session.commit()
             click.echo("Book returned successfully.")
         except IntegrityError:

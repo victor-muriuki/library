@@ -15,6 +15,6 @@ Base.metadata.create_all(bind=engine)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def init_db():
-    # This function is used to initialize the database, e.g., when running migrations
+    # initialize the database
     Base.metadata.create_all(bind=engine)
     print("Database initialized.")
