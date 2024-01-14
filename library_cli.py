@@ -1,26 +1,29 @@
+#library_cli.py
+
 import click
 from library.models import Book, BorrowedBook, User
 from library.database import SessionLocal, init_db
 
 init_db()
 
-def sort_items(items, key_function):
-    return sorted(items, key=key_function)
-
 def sort_books(books):
-    return sort_items(books, key=lambda book: book.title)
+    # Sort a list of books alphabetically by title
+    return sorted(books, key=lambda book: book.title)
 
 def sort_users(users):
-    return sort_items(users, key=lambda user: user.name)
+    # Sort a list of users alphabetically by name
+    return sorted(users, key=lambda user: user.name)
 
 @click.group()
 def cli():
+    # Define the main click group for the CLI
     pass
 
 @cli.command()
 @click.argument('name')
 def add_user(name):
     """Add a new user to the library."""
+    # Command to add a new user to the library
     user = User(name=name)
     with SessionLocal() as db:
         db.add(user)
@@ -31,6 +34,7 @@ def add_user(name):
 @click.argument('title')
 def add_book(title):
     """Add a new book to the library."""
+    # Command to add a new book to the library
     book = Book(title=title, available_copies=1)  # Assuming 1 copy for simplicity
     with SessionLocal() as db:
         db.add(book)
@@ -40,6 +44,7 @@ def add_book(title):
 @cli.command()
 def list_users():
     """List all users in the library."""
+    # Command to list all users in the library
     with SessionLocal() as db:
         users = db.query(User).all()
 
@@ -56,6 +61,7 @@ def list_users():
 @cli.command()
 def list_books():
     """List all books in the library."""
+    # Command to list all books in the library
     with SessionLocal() as db:
         books = db.query(Book).all()
 
@@ -72,6 +78,7 @@ def list_books():
 @cli.command()
 def list_borrowed_books():
     """List all borrowed books in the library."""
+    # Command to list all borrowed books in the library
     with SessionLocal() as db:
         borrowed_books = db.query(BorrowedBook).all()
 
@@ -83,6 +90,20 @@ def list_borrowed_books():
             click.echo("No borrowed books found.")
 
 # Additional commands (borrow, return) can be added as needed
+def return_book(session, user_id, book_id):
+    borrowed_book = session.query(BorrowedBook).filter_by(user_id=user_id, book_id=book_id).first()
+    if borrowed_book:
+        try:
+            session.delete(borrowed_book)
+            # Increment available copies when returning the book
+            borrowed_book.book.available_copies += 1
+            session.commit()
+            click.echo("Book returned successfully.")
+        except IntegrityError:
+            session.rollback()
+            click.echo("Error: Unable to return the book.")
+    else:
+        click.echo("Borrowed book not found.")
 
 if __name__ == "__main__":
     cli()

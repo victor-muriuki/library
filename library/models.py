@@ -1,5 +1,5 @@
 # models.py
-# from alembic.config import Config
+
 
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
@@ -20,6 +20,7 @@ class Book(Base):
     id = Column(Integer, primary_key=True)
     title = Column(String, nullable=False)
     borrowed_books = relationship("BorrowedBook", back_populates="book")
+    available_copies = Column(Integer, default=0)
 
 class BorrowedBook(Base):
     __tablename__ = 'borrowed_books'
