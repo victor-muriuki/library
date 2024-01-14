@@ -20,7 +20,7 @@ class Book(Base):
     id = Column(Integer, primary_key=True)
     title = Column(String, nullable=False)
     borrowed_books = relationship("BorrowedBook", back_populates="book")
-    available_copies = Column(Integer, default=0)
+    
 
 class BorrowedBook(Base):
     __tablename__ = 'borrowed_books'

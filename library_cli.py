@@ -1,4 +1,4 @@
-#library_cli.py
+# library_cli.py
 
 import click
 from library.models import Book, BorrowedBook, User
@@ -13,6 +13,7 @@ def sort_books(books):
 def sort_users(users):
     # Sort a list of users alphabetically by name
     return sorted(users, key=lambda user: user.name)
+
 
 @click.group()
 def cli():
@@ -35,11 +36,33 @@ def add_user(name):
 def add_book(title):
     """Add a new book to the library."""
     # Command to add a new book to the library
-    book = Book(title=title, available_copies=1)  # Assuming 1 copy for simplicity
+    book = Book(title=title)
     with SessionLocal() as db:
         db.add(book)
         db.commit()
     click.echo(f"Book '{title}' added successfully.")
+
+@cli.command()
+@click.argument('user_id', type=int)
+@click.argument('book_id', type=int)
+def borrow_book(user_id, book_id):
+    """Borrow a book."""
+    with SessionLocal() as db:
+        borrow_book(db, user_id, book_id)
+
+def borrow_book(session, user_id, book_id):
+    try:
+        # Create a new borrowed book entry
+        borrowed_book = BorrowedBook(user_id=user_id, book_id=book_id)
+        session.add(borrowed_book)
+        session.commit()
+
+        click.echo(f"Book borrowed successfully.")
+    except NoResultFound:
+        click.echo("Error: Book not found.")
+    except Exception as e:
+        click.echo(f"Error: {str(e)}")
+        session.rollback()
 
 @cli.command()
 def list_users():
@@ -71,7 +94,7 @@ def list_books():
         if sorted_books:
             click.echo("List of Books:")
             for book in sorted_books:
-                click.echo(f"Book ID: {book.id}, Title: {book.title}, Copies: {book.available_copies}")
+                click.echo(f"Book ID: {book.id}, Title: {book.title}")
         else:
             click.echo("No books found.")
 
@@ -85,9 +108,10 @@ def list_borrowed_books():
         if borrowed_books:
             click.echo("List of Borrowed Books:")
             for borrowed_book in borrowed_books:
-                click.echo(f"Book ID: {borrowed_book.book_id}, User ID: {borrowed_book.user_id}, Due Date: {borrowed_book.due_date}")
+                click.echo(f"Book ID: {borrowed_book.book_id}, User ID: {borrowed_book.user_id}")
         else:
             click.echo("No borrowed books found.")
+
 
 # Additional commands (borrow, return) can be added as needed
 def return_book(session, user_id, book_id):
@@ -95,8 +119,7 @@ def return_book(session, user_id, book_id):
     if borrowed_book:
         try:
             session.delete(borrowed_book)
-            # Increment available copies when returning the book
-            borrowed_book.book.available_copies += 1
+            # No need to increment available copies since it's removed from the model
             session.commit()
             click.echo("Book returned successfully.")
         except IntegrityError:
